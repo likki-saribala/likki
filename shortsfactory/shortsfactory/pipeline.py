@@ -12,6 +12,7 @@ from pathlib import Path
 from .captions import build_ass
 from .config import Settings
 from .footage import Footage
+from .music import pick_track
 from .render import burn_captions, concat_segments, render_segment
 from .script import ScriptWriter
 from .tts import TTS, WordTiming
@@ -59,7 +60,8 @@ async def make_short(topic: str, writer: ScriptWriter, tts: TTS, footage: Footag
     (work / "captions.ass").write_text(build_ass(all_words, cfg.width, cfg.height, cfg.font), encoding="utf-8")
     concat_segments(segments, work / "joined.mp4")
     final = cfg.out_dir / f"{slug}.mp4"
-    burn_captions(work / "joined.mp4", "captions.ass", final)
+    track = pick_track(cfg.music_dir)
+    burn_captions(work / "joined.mp4", "captions.ass", final, track, offset, cfg.music_volume)
 
     meta = cfg.out_dir / f"{slug}.json"
     meta.write_text(
@@ -68,6 +70,7 @@ async def make_short(topic: str, writer: ScriptWriter, tts: TTS, footage: Footag
                 "topic": topic,
                 "created": datetime.now(timezone.utc).isoformat(),
                 "duration": round(offset, 2),
+                "music": track.name if track else None,
                 **script.to_dict(),
             },
             indent=2,

@@ -25,13 +25,26 @@ export GEMINI_API_KEY=...           # script writing, free key: aistudio.google.
 # or: export ANTHROPIC_API_KEY=...  # needs paid API credit; a Claude Pro chat plan does not include it
 # Gemini wins if both are set. Override the model with SF_GEMINI_MODEL if the default is retired.
 export PIXABAY_API_KEY=...          # free at pixabay.com/api/docs (Pexels also works, but it paused new keys)
-python -m shortsfactory --topic "why honey never spoils"
+python -m shortsfactory --topic "how GPS actually knows where you are"
 ```
 
-Hand-written script instead of Claude: `--script-file examples/honey.json`.
+Hand-written script instead of Claude: `--script-file examples/gps.json`.
 Dry run with no Pexels key: add `--placeholder-footage` (solid colours, clearly logged, never automatic).
 
-Settings are environment variables only (see `shortsfactory/config.py`): `SF_VOICE`, `SF_VOICE_RATE`, `SF_SCRIPT_MODEL`, `SF_FONT`.
+Settings are environment variables only (see `shortsfactory/config.py`): `SF_VOICE`, `SF_VOICE_RATE`, `SF_SCRIPT_MODEL`,
+`SF_GEMINI_MODEL`, `SF_FONT`, `SF_MUSIC_DIR`, `SF_MUSIC_VOLUME`.
+
+## Background music
+
+Put 5-10 mp3 files in `shortsfactory/music/` (the folder is git-ignored). One is picked at random per video, looped to
+fit, faded in and out, and ducked under the voice. Use only music you are licensed to use: the YouTube Audio Library
+(YouTube Studio, Audio Library) is the safest source for a YouTube channel. We never download music automatically,
+because copyright claims on Shorts are real. With no files in the folder, the video is made without music and the log says so.
+
+## Style
+
+Scripts are serious, informational explainers (science, technology, history, economics, health, space, psychology),
+not cute trivia. The prompt lives in `shortsfactory/script.py` (`SYSTEM`).
 
 ## Tests
 

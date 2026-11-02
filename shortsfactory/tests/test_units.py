@@ -23,13 +23,22 @@ def test_script_roundtrip_and_validation():
 
 
 def test_caption_chunks_and_ass():
+    from shortsfactory.captions import MAX_CHARS_PER_CHUNK
+
     ws = [WordTiming(t, i * 0.3, i * 0.3 + 0.25) for i, t in enumerate("Honey never spoils, ever. Really {x}".split())]
     chunks = chunk_words(ws)
     assert all(len(c) <= 3 for c in chunks)
-    assert chunks[1][-1].text == "ever."  # breaks at sentence end
+    for c in chunks:  # width budget: never over the char limit unless it is one long word
+        assert len(c) == 1 or len(" ".join(w.text for w in c)) <= MAX_CHARS_PER_CHUNK
+    assert chunks[-2][-1].text == "ever."  # sentence end closes a chunk
     ass = build_ass(ws, 1080, 1920, "DejaVu Sans")
-    assert "PlayResY: 1920" in ass and "HONEY NEVER SPOILS," in ass
+    assert "PlayResY: 1920" in ass and "HONEY NEVER" in ass
     assert "{x}" not in ass  # override braces neutralised
+
+
+def test_long_words_get_their_own_chunk_instead_of_overflowing():
+    ws = [WordTiming(t, i, i + 0.5) for i, t in enumerate("International infrastructure consequences".split())]
+    assert [len(c) for c in chunk_words(ws)] == [1, 1, 1]
 
 
 def test_pick_file_prefers_portrait_near_1080():

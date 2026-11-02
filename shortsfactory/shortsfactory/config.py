@@ -21,6 +21,8 @@ class Settings:
     fps: int = 30
     scene_tail_pad: float = 0.15  # seconds of breathing room after each scene
     font: str = "DejaVu Sans"
+    music_dir: Path = Path("music")
+    music_volume: float = 0.22  # 0-1 before ducking; raise if the music is too quiet
     work_dir: Path = Path("work")
     out_dir: Path = Path("out")
 
@@ -37,6 +39,8 @@ class Settings:
             voice=e("SF_VOICE", cls.voice),
             voice_rate=e("SF_VOICE_RATE", cls.voice_rate),
             font=e("SF_FONT", cls.font),
+            music_dir=Path(e("SF_MUSIC_DIR", "music")),
+            music_volume=float(e("SF_MUSIC_VOLUME", cls.music_volume)),
             work_dir=Path(e("SF_WORK_DIR", "work")),
             out_dir=Path(e("SF_OUT_DIR", "out")),
         )

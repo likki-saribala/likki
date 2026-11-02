@@ -45,3 +45,38 @@ def test_end_to_end_produces_vertical_mp4(tmp_path):
 
     meta = json.loads(res.metadata.read_text())
     assert meta["title"] == "Honey Never Spoils" and meta["scenes"][0]["claim"] == "claim 0"
+
+
+def _mean_volume(path):
+    import re
+    import subprocess
+
+    out = subprocess.run(["ffmpeg", "-i", str(path), "-af", "volumedetect", "-vn", "-f", "null", "-"], capture_output=True, text=True).stderr
+    return float(re.search(r"mean_volume: (-?[\d.]+) dB", out).group(1))
+
+
+class SilentTTS:
+    """Digital silence for the voice track, so any sound in the final video must come from the music."""
+
+    async def synth(self, text, out_path):
+        run_ffmpeg(["-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono", "-t", "1.5", str(out_path)])
+        words = text.split()
+        step = 1.5 / len(words)
+        return SceneAudio(out_path, probe_duration(out_path), [WordTiming(w, i * step, (i + 1) * step) for i, w in enumerate(words)])
+
+
+def test_music_is_mixed_in_loops_and_video_length_unchanged(tmp_path):
+    music = tmp_path / "music"
+    music.mkdir()
+    run_ffmpeg(["-f", "lavfi", "-i", "sine=frequency=220:duration=3", str(music / "bed.mp3")])  # shorter than video: must loop
+
+    no_music = Settings(None, None, work_dir=tmp_path / "w1", out_dir=tmp_path / "o1", music_dir=tmp_path / "nonexistent")
+    with_music = Settings(None, None, work_dir=tmp_path / "w2", out_dir=tmp_path / "o2", music_dir=music)
+    a = asyncio.run(make_short("t", FakeWriter(), SilentTTS(), PlaceholderFootage(), no_music))
+    b = asyncio.run(make_short("t", FakeWriter(), SilentTTS(), PlaceholderFootage(), with_music))
+
+    assert json.loads(a.metadata.read_text())["music"] is None
+    assert json.loads(b.metadata.read_text())["music"] == "bed.mp3"
+    assert abs(probe_duration(b.video) - probe_duration(a.video)) < 0.4  # looped to full length, not truncated
+    assert _mean_volume(a.video) < -80  # no music, silent voice: silence
+    assert _mean_volume(b.video) > -50  # the bed is audibly present, even past its own 3s length

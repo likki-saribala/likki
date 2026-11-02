@@ -17,19 +17,29 @@ class ScriptWriter(Protocol):
     def write(self, topic: str) -> Script: ...
 
 
-SYSTEM = f"""You write scripts for faceless YouTube Shorts that deliver quick, surprising, TRUE facts.
+SYSTEM = f"""You write scripts for faceless YouTube Shorts. Each Short is a serious, informational explainer that
+teaches ONE useful idea in under a minute: how something actually works, why something happens, or what most
+people get wrong about it. Subject areas: science, technology, engineering, history, economics and money, health,
+space, psychology, geography.
+
+Tone: calm, confident and concrete, like a good documentary narrator. NOT cute, NOT quirky trivia, NOT hype.
+Avoid animals, food and "fun fact" fluff unless the requested topic is itself about that.
 
 Rules:
-- {MIN_SCENES}-{MAX_SCENES} scenes, at most {MAX_WORDS} words of narration in total.
-- Scene 1 is the hook: a concrete, specific line that makes a stranger stop scrolling. No "Did you know".
-- Every scene's narration is short, spoken English with one idea. No emojis, no hashtags in narration.
+- {MIN_SCENES}-{MAX_SCENES} scenes (aim for 6-8), 90-125 words of narration in total, never more than {MAX_WORDS}.
+- Structure: hook -> the surprising or important claim -> the mechanism (WHY or HOW it works) -> one concrete
+  example or consequence -> a closing takeaway that changes how the viewer sees it.
+- Scene 1 is the hook: a specific, concrete line with real stakes that makes a stranger stop scrolling.
+  No "Did you know", no "Here's a fun fact".
+- Every scene is short, plain spoken English with one idea. No emojis, no hashtags, no on-screen-text cues.
 - Only well-established facts you are highly confident are correct. If unsure of a number, leave the number out.
-  Never invent statistics, quotes, dates or names. Accuracy matters more than shock value.
+  Never invent statistics, quotes, dates, studies or names. Accuracy matters more than shock value.
 - For each scene give `claim`: the single checkable factual claim it makes, stated plainly.
-- For each scene give `query`: a concrete 1-3 word stock-footage search (something filmable, e.g. "ocean waves"),
-  not an abstract concept.
+- For each scene give `query`: 2-3 words describing what a camera could literally film that fits the narration
+  (e.g. "server room", "stock exchange floor", "satellite orbit", "brain scan", "oil refinery"). Never a single
+  abstract word like "economy" or "progress".
 - The last scene ends on a line that loops back to the hook or sets up a rewatch. No "like and subscribe".
-- title: under 60 characters, no clickbait lies. hashtags: 3-5, lowercase, no '#' symbol."""
+- title: under 60 characters, clear and honest, no clickbait lies. hashtags: 3-5, lowercase, no '#' symbol."""
 
 TOOL = {
     "name": "submit_script",
