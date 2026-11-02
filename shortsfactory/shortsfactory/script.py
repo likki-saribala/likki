@@ -6,6 +6,8 @@ import logging
 from pathlib import Path
 from typing import Protocol
 
+import httpx
+
 from .models import MAX_SCENES, MAX_WORDS, MIN_SCENES, Script
 
 log = logging.getLogger("sf.script")
@@ -93,9 +95,7 @@ class GeminiScriptWriter:
     URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
     def __init__(self, api_key: str, model: str, client=None) -> None:
-        import httpx
-
-        self._client = client or httpx.Client(timeout=90)
+        self._client = client or httpx.Client(timeout=httpx.Timeout(240, connect=20))  # thinking models can be slow
         self._key = api_key
         self._model = model
 
@@ -124,7 +124,13 @@ class GeminiScriptWriter:
         log.info("writing script for topic %r with %s", topic, self._model)
         prompt = f"Topic: {topic}"
         for attempt in (1, 2):
-            raw = self._ask(prompt)
+            try:
+                raw = self._ask(prompt)
+            except httpx.TimeoutException as exc:
+                if attempt == 2:
+                    raise RuntimeError(f"Gemini timed out twice on model {self._model!r}; try SF_GEMINI_MODEL=<a -lite model>") from exc
+                log.warning("Gemini timed out; retrying once")
+                continue
             try:
                 return Script.from_dict(json.loads(raw))
             except (ValueError, json.JSONDecodeError) as exc:

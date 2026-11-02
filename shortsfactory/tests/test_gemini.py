@@ -31,6 +31,25 @@ def test_valid_script_parsed():
     assert "models/m:generateContent" in str(seen[0].url)
 
 
+def test_timeout_retries_once_then_fails_loudly():
+    calls = []
+
+    def handler(req):
+        calls.append(1)
+        if len(calls) == 1:
+            raise httpx.ReadTimeout("slow", request=req)
+        return httpx.Response(200, json={"candidates": [{"content": {"parts": [{"text": json.dumps(GOOD)}]}}]})
+
+    c = httpx.Client(transport=httpx.MockTransport(handler))
+    assert GeminiScriptWriter("k", "m", c).write("x").title == "T" and len(calls) == 2
+
+    def always(req):
+        raise httpx.ReadTimeout("slow", request=req)
+
+    with pytest.raises(RuntimeError, match="timed out twice"):
+        GeminiScriptWriter("k", "m", httpx.Client(transport=httpx.MockTransport(always))).write("x")
+
+
 def test_http_error_includes_google_message():
     c = httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(404, text='{"error":{"message":"model gone"}}')))
     with pytest.raises(RuntimeError, match="404.*'m'.*model gone"):
