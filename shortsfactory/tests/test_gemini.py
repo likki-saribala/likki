@@ -31,6 +31,12 @@ def test_valid_script_parsed():
     assert "models/m:generateContent" in str(seen[0].url)
 
 
+def test_http_error_includes_google_message():
+    c = httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(404, text='{"error":{"message":"model gone"}}')))
+    with pytest.raises(RuntimeError, match="404.*'m'.*model gone"):
+        GeminiScriptWriter("k", "m", c).write("x")
+
+
 def test_retries_once_then_succeeds_and_then_fails_loudly():
     c, seen = _client("not json", json.dumps(GOOD))
     assert GeminiScriptWriter("k", "m", c).write("x").title == "T"

@@ -13,7 +13,7 @@ class Settings:
     gemini_api_key: str | None = None
     pixabay_api_key: str | None = None
     script_model: str = "claude-haiku-5-5"
-    gemini_model: str = "gemini-2.5-flash"  # model names change; override with SF_GEMINI_MODEL
+    gemini_model: str = "gemini-flash-latest"  # alias Google keeps current; pin a name with SF_GEMINI_MODEL
     voice: str = "en-US-AriaNeural"
     voice_rate: str = "+8%"  # edge-tts rate; Shorts reward brisk delivery
     width: int = 1080

@@ -113,7 +113,8 @@ class GeminiScriptWriter:
                 },
             },
         )
-        resp.raise_for_status()
+        if resp.status_code >= 400:  # show Google's own explanation instead of a bare status code
+            raise RuntimeError(f"Gemini API error {resp.status_code} for model {self._model!r}: {resp.text[:500]}")
         try:
             return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
         except (KeyError, IndexError) as exc:
