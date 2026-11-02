@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 from .config import Settings
-from .footage import PexelsFootage, PlaceholderFootage
+from .footage import PexelsFootage, PixabayFootage, PlaceholderFootage
 from .pipeline import make_short
 from .script import ClaudeScriptWriter, FileScriptWriter, GeminiScriptWriter
 from .tts import EdgeTTS
@@ -36,10 +36,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.placeholder_footage:
         footage = PlaceholderFootage()
-    elif cfg.pexels_api_key:
+    elif cfg.pexels_api_key:  # portrait-native, so looks best when available
         footage = PexelsFootage(cfg.pexels_api_key)
+    elif cfg.pixabay_api_key:
+        footage = PixabayFootage(cfg.pixabay_api_key)
     else:
-        print("error: set PEXELS_API_KEY, or pass --placeholder-footage for a dry run", file=sys.stderr)
+        print("error: set PEXELS_API_KEY or PIXABAY_API_KEY, or pass --placeholder-footage for a dry run", file=sys.stderr)
         return 2
 
     try:

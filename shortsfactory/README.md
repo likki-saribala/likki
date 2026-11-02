@@ -24,7 +24,7 @@ pip install -r requirements.txt     # needs ffmpeg with libass on PATH
 export GEMINI_API_KEY=...           # script writing, free key: aistudio.google.com/apikey
 # or: export ANTHROPIC_API_KEY=...  # needs paid API credit; a Claude Pro chat plan does not include it
 # Gemini wins if both are set. Override the model with SF_GEMINI_MODEL if the default is retired.
-export PEXELS_API_KEY=...           # free at pexels.com/api
+export PIXABAY_API_KEY=...          # free at pixabay.com/api/docs (Pexels also works, but it paused new keys)
 python -m shortsfactory --topic "why honey never spoils"
 ```
 

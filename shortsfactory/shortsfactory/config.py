@@ -11,6 +11,7 @@ class Settings:
     anthropic_api_key: str | None
     pexels_api_key: str | None
     gemini_api_key: str | None = None
+    pixabay_api_key: str | None = None
     script_model: str = "claude-haiku-5-5"
     gemini_model: str = "gemini-2.5-flash"  # model names change; override with SF_GEMINI_MODEL
     voice: str = "en-US-AriaNeural"
@@ -30,6 +31,7 @@ class Settings:
             anthropic_api_key=e("ANTHROPIC_API_KEY"),
             pexels_api_key=e("PEXELS_API_KEY"),
             gemini_api_key=e("GEMINI_API_KEY"),
+            pixabay_api_key=e("PIXABAY_API_KEY"),
             script_model=e("SF_SCRIPT_MODEL", cls.script_model),
             gemini_model=e("SF_GEMINI_MODEL", cls.gemini_model),
             voice=e("SF_VOICE", cls.voice),

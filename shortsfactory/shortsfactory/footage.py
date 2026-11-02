@@ -72,6 +72,54 @@ class PexelsFootage:
         raise FootageNotFound(f"no usable portrait footage on Pexels for {query!r}")
 
 
+PIXABAY_URL = "https://pixabay.com/api/videos/"
+
+
+def pick_pixabay_rendition(hit: dict) -> dict | None:
+    """Smallest rendition that is at least 1080 tall (we crop to 9:16, so height is what matters);
+    otherwise the biggest one available."""
+    rends = [r for r in hit.get("videos", {}).values() if r.get("url") and r.get("height")]
+    if not rends:
+        return None
+    big = [r for r in rends if r["height"] >= 1080]
+    return min(big, key=lambda r: r["height"]) if big else max(rends, key=lambda r: r["height"])
+
+
+class PixabayFootage:
+    """Pixabay videos are mostly LANDSCAPE (no portrait filter exists), so they get centre-cropped to 9:16."""
+
+    def __init__(self, api_key: str, client: httpx.Client | None = None) -> None:
+        self._client = client or httpx.Client(timeout=60, follow_redirects=True)
+        self._key = api_key
+        self._used: set[int] = set()
+
+    def _search(self, query: str) -> dict | None:
+        resp = self._client.get(PIXABAY_URL, params={"key": self._key, "q": query[:100], "per_page": 20, "safesearch": "true"})
+        resp.raise_for_status()
+        for hit in resp.json().get("hits", []):
+            if hit["id"] in self._used:
+                continue
+            r = pick_pixabay_rendition(hit)
+            if r:
+                self._used.add(hit["id"])
+                return r
+        return None
+
+    def fetch(self, query: str, dest: Path) -> Path:
+        candidates = [query] + ([query.split()[-1]] if len(query.split()) > 1 else [])
+        for q in candidates:
+            r = self._search(q)
+            if r:
+                log.info("pixabay %r -> %dx%d", q, r["width"], r["height"])
+                with self._client.stream("GET", r["url"]) as resp:
+                    resp.raise_for_status()
+                    with dest.open("wb") as out:
+                        for part in resp.iter_bytes():
+                            out.write(part)
+                return dest
+        raise FootageNotFound(f"no usable footage on Pixabay for {query!r}")
+
+
 class PlaceholderFootage:
     """Solid-colour clips. Dry-run/testing only; never used unless explicitly requested."""
 
