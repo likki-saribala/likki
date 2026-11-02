@@ -13,6 +13,13 @@ from .script import ClaudeScriptWriter, FileScriptWriter, GeminiScriptWriter
 from .tts import EdgeTTS
 
 
+def configure_logging(verbose: bool) -> None:
+    logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO, format="%(asctime)s %(name)s %(message)s")
+    # httpx logs full request URLs, and Pixabay takes its API key as a URL parameter. Never let that reach a log.
+    for noisy in ("httpx", "httpcore"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="shortsfactory", description="Make one vertical Short from a topic.")
     p.add_argument("--topic", default="", help="what the Short is about (needs ANTHROPIC_API_KEY)")
@@ -21,7 +28,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("-v", "--verbose", action="store_true")
     args = p.parse_args(argv)
 
-    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO, format="%(asctime)s %(name)s %(message)s")
+    configure_logging(args.verbose)
     cfg = Settings.from_env()
 
     if args.script_file:
