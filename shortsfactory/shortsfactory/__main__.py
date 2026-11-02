@@ -9,7 +9,7 @@ from pathlib import Path
 from .config import Settings
 from .footage import PexelsFootage, PlaceholderFootage
 from .pipeline import make_short
-from .script import ClaudeScriptWriter, FileScriptWriter
+from .script import ClaudeScriptWriter, FileScriptWriter, GeminiScriptWriter
 from .tts import EdgeTTS
 
 
@@ -26,10 +26,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.script_file:
         writer = FileScriptWriter(args.script_file)
+    elif args.topic and cfg.gemini_api_key:  # free tier first; Anthropic if you have API credit
+        writer = GeminiScriptWriter(cfg.gemini_api_key, cfg.gemini_model)
     elif args.topic and cfg.anthropic_api_key:
         writer = ClaudeScriptWriter(cfg.anthropic_api_key, cfg.script_model)
     else:
-        print("error: give --script-file, or --topic with ANTHROPIC_API_KEY set", file=sys.stderr)
+        print("error: give --script-file, or --topic with GEMINI_API_KEY or ANTHROPIC_API_KEY set", file=sys.stderr)
         return 2
 
     if args.placeholder_footage:

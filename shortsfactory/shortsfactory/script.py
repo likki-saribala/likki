@@ -78,6 +78,62 @@ class ClaudeScriptWriter:
         raise RuntimeError("model did not return a script (no submit_script tool call)")
 
 
+def _gemini_schema(node):
+    """Gemini wants OpenAPI-style upper-case type names."""
+    if isinstance(node, dict):
+        return {k: (v.upper() if k == "type" and isinstance(v, str) else _gemini_schema(v)) for k, v in node.items()}
+    if isinstance(node, list):
+        return [_gemini_schema(x) for x in node]
+    return node
+
+
+class GeminiScriptWriter:
+    """Free-tier-friendly alternative to Claude. Retries once, feeding the validation error back."""
+
+    URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+
+    def __init__(self, api_key: str, model: str, client=None) -> None:
+        import httpx
+
+        self._client = client or httpx.Client(timeout=90)
+        self._key = api_key
+        self._model = model
+
+    def _ask(self, prompt: str) -> str:
+        resp = self._client.post(
+            self.URL.format(model=self._model),
+            headers={"x-goog-api-key": self._key},
+            json={
+                "systemInstruction": {"parts": [{"text": SYSTEM}]},
+                "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+                "generationConfig": {
+                    "responseMimeType": "application/json",
+                    "responseSchema": _gemini_schema(TOOL["input_schema"]),
+                    "temperature": 0.8,
+                },
+            },
+        )
+        resp.raise_for_status()
+        try:
+            return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+        except (KeyError, IndexError) as exc:
+            raise RuntimeError(f"Gemini returned no script text: {resp.text[:300]}") from exc
+
+    def write(self, topic: str) -> Script:
+        log.info("writing script for topic %r with %s", topic, self._model)
+        prompt = f"Topic: {topic}"
+        for attempt in (1, 2):
+            raw = self._ask(prompt)
+            try:
+                return Script.from_dict(json.loads(raw))
+            except (ValueError, json.JSONDecodeError) as exc:
+                if attempt == 2:
+                    raise RuntimeError(f"Gemini script invalid twice: {exc}") from exc
+                log.warning("script rejected (%s); retrying once", exc)
+                prompt = f"Topic: {topic}\n\nYour previous attempt was rejected: {exc}. Fix that and try again."
+        raise AssertionError("unreachable")
+
+
 class FileScriptWriter:
     """Loads a hand-written or previously generated script.json. Useful for re-renders."""
 
