@@ -41,6 +41,19 @@ fit, faded in and out, and ducked under the voice. Use only music you are licens
 (YouTube Studio, Audio Library) is the safest source for a YouTube channel. We never download music automatically,
 because copyright claims on Shorts are real. With no files in the folder, the video is made without music and the log says so.
 
+## Voice
+
+The whole script is voiced in ONE continuous take, so intonation flows across sentences; scene cuts are placed on the
+words afterwards. Pick a voice with `SF_VOICE` and audition candidates without running the pipeline:
+
+```bash
+python -m edge_tts --list-voices                      # all voices; names like en-US-AvaMultilingualNeural
+python -m edge_tts --voice en-US-AvaMultilingualNeural --text "Your phone finds you, without ever sending a signal." --write-media test.mp3
+```
+
+`edge-tts` is limited: no emotion or style controls, only `SF_VOICE_RATE`. Some voices may not report word timings
+(captions need them); the run then fails with a clear message and you pick another voice.
+
 ## Style
 
 Scripts are serious, informational explainers (science, technology, history, economics, health, space, psychology),

@@ -32,6 +32,11 @@ Rules:
 - Scene 1 is the hook: a specific, concrete line with real stakes that makes a stranger stop scrolling.
   No "Did you know", no "Here's a fun fact".
 - Every scene is short, plain spoken English with one idea. No emojis, no hashtags, no on-screen-text cues.
+- Write for the EAR, not the page: it will be read aloud by a text-to-speech voice, in one continuous take.
+  Use contractions ("it's", "doesn't"), talk to the viewer as "you", and vary sentence length: mix short punchy
+  sentences with longer ones. Add an occasional rhetorical question. Use commas and dashes where a speaker would
+  pause or shift tone, and a question mark where the voice should lift. At most one exclamation mark in the whole
+  script. Scenes must flow into each other as one story, not read as separate captions.
 - Only well-established facts you are highly confident are correct. If unsure of a number, leave the number out.
   Never invent statistics, quotes, dates, studies or names. Accuracy matters more than shock value.
 - For each scene give `claim`: the single checkable factual claim it makes, stated plainly.

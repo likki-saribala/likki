@@ -16,12 +16,14 @@ class FakeWriter:
 
 
 class FakeTTS:
-    """Real 1.5s audio file via ffmpeg sine; synthetic word timings."""
+    """Real audio via ffmpeg sine (0.3s per word); synthetic word timings. Called once per video."""
+
+    SEC_PER_WORD = 0.3
 
     async def synth(self, text, out_path):
-        run_ffmpeg(["-f", "lavfi", "-i", "sine=frequency=440:duration=1.5", str(out_path)])
         words = text.split()
-        step = 1.5 / len(words)
+        run_ffmpeg(["-f", "lavfi", "-i", f"sine=frequency=440:duration={len(words) * self.SEC_PER_WORD}", str(out_path)])
+        step = self.SEC_PER_WORD
         return SceneAudio(out_path, probe_duration(out_path), [WordTiming(w, i * step, (i + 1) * step) for i, w in enumerate(words)])
 
 
@@ -30,8 +32,8 @@ def test_end_to_end_produces_vertical_mp4(tmp_path):
     res = asyncio.run(make_short("honey", FakeWriter(), FakeTTS(), PlaceholderFootage(), cfg))
 
     assert res.video.exists() and res.video.suffix == ".mp4"
-    # 4 scenes * (1.5s audio + 0.15 pad) = 6.6s, allow encoder rounding
-    assert abs(probe_duration(res.video) - 6.6) < 0.4
+    # 4 scenes * 6 words * 0.3s = 7.2s of voice, plus the 0.5s end pad
+    assert abs(probe_duration(res.video) - 7.7) < 0.4
 
     import subprocess
 
@@ -55,13 +57,13 @@ def _mean_volume(path):
     return float(re.search(r"mean_volume: (-?[\d.]+) dB", out).group(1))
 
 
-class SilentTTS:
+class SilentTTS(FakeTTS):
     """Digital silence for the voice track, so any sound in the final video must come from the music."""
 
     async def synth(self, text, out_path):
-        run_ffmpeg(["-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono", "-t", "1.5", str(out_path)])
         words = text.split()
-        step = 1.5 / len(words)
+        run_ffmpeg(["-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono", "-t", str(len(words) * self.SEC_PER_WORD), str(out_path)])
+        step = self.SEC_PER_WORD
         return SceneAudio(out_path, probe_duration(out_path), [WordTiming(w, i * step, (i + 1) * step) for i, w in enumerate(words)])
 
 

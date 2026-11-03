@@ -19,7 +19,7 @@ class Settings:
     width: int = 1080
     height: int = 1920
     fps: int = 30
-    scene_tail_pad: float = 0.15  # seconds of breathing room after each scene
+    end_pad: float = 0.5  # seconds of calm after the last word before the video ends
     font: str = "DejaVu Sans"
     music_dir: Path = Path("music")
     music_volume: float = 0.22  # 0-1 before ducking; raise if the music is too quiet
