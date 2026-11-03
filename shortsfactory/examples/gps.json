@@ -1,0 +1,13 @@
+{
+  "title": "How GPS actually knows where you are",
+  "scenes": [
+    {"text": "Your phone finds you without ever sending a signal to a satellite.", "query": "satellite orbit", "claim": "GPS receivers only listen to satellite broadcasts; they do not transmit to the satellites."},
+    {"text": "About thirty satellites orbit twenty thousand kilometres up, each broadcasting the time from an atomic clock.", "query": "earth from space", "claim": "The GPS constellation has roughly thirty satellites at about 20,200 km altitude carrying atomic clocks."},
+    {"text": "Your phone measures how long each signal took to arrive. Multiply by the speed of light, and you have a distance.", "query": "smartphone map", "claim": "Distance to a satellite equals signal travel time multiplied by the speed of light."},
+    {"text": "One distance puts you on a giant sphere. Three spheres meet at just two points, and one is out in space.", "query": "digital globe", "claim": "Intersecting three spheres gives two candidate points; one is typically far from Earth's surface."},
+    {"text": "A fourth satellite corrects your phone's cheap clock, because one billionth of a second is thirty centimetres of error.", "query": "atomic clock", "claim": "Light travels about 30 cm in one nanosecond, so a 1 ns clock error is about 30 cm of range error."},
+    {"text": "Relativity is built in. Without its corrections, GPS would drift by about ten kilometres every day.", "query": "clock mechanism", "claim": "Uncorrected relativistic clock offsets of roughly 38 microseconds per day would cause errors of about 10 km per day."},
+    {"text": "Every time a map finds you, it quietly proves Einstein right.", "query": "gps navigation car", "claim": "GPS timing depends on relativistic corrections that match general and special relativity."}
+  ],
+  "hashtags": ["gps", "science", "technology", "physics"]
+}

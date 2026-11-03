@@ -1,0 +1,6 @@
+work/
+out/
+.env
+__pycache__/
+.pytest_cache/
+music/
