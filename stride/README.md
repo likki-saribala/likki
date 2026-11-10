@@ -25,11 +25,12 @@ All calorie figures are estimates.
 | Gym | 2.5 / 4 / 5 net MET for light / moderate / intense × kg × hours |
 | Food | bundled table of typical per-100 g values (`js/foods.js`), plus your own saved foods |
 
-## Not built yet
+## Steps
 
-- Automatic step sync. A browser cannot read Health Connect; this needs the Android wrapper.
-  Until then the step count is typed in.
-- Online food search (Open Food Facts) is wired in but has not been tested against the live service.
+In a browser the step count is typed in. The Android app in `../stride-android` reads it
+from Health Connect through `js/native.js`.
+
+Online food search (Open Food Facts) is wired in but has not been verified against the live service.
 
 ## Files
 
@@ -39,5 +40,6 @@ All calorie figures are estimates.
 | `js/foodparse.js` | Turns "2 roti, 150g chicken" into matched foods and grams |
 | `js/foods.js`, `js/exercises.js` | Bundled food table and exercise list |
 | `js/store.js` | Storage |
+| `js/native.js` | Bridge to the Android shell (step sync, share, backup) |
 | `js/app.js` | Views, sheets and actions |
 | `tests/` | Unit tests for the maths, parser and food table |

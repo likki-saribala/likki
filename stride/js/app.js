@@ -3,6 +3,9 @@ import * as C from './calc.js';
 import { FOODS } from './foods.js';
 import { resolveEntry, searchFoods, gramsFor, describe } from './foodparse.js';
 import { EXERCISES } from './exercises.js';
+import { createBridge, HEALTH_MESSAGES } from './native.js';
+
+const bridge = createBridge(globalThis.StrideNative);
 
 const MEALS = [['breakfast', 'Breakfast'], ['lunch', 'Lunch'], ['snacks', 'Snacks'], ['dinner', 'Dinner']];
 const TABS = [['today', 'Today'], ['gym', 'Gym'], ['food', 'Food'], ['report', 'Report']];
@@ -20,7 +23,7 @@ const ICON = {
   tick: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 5"/></svg>',
 };
 
-const state = { tab: 'today', date: todayKey(), meal: mealForNow(), pending: null, online: null, anim: new Map(), locked: false };
+const state = { tab: 'today', date: todayKey(), meal: mealForNow(), pending: null, online: null, anim: new Map(), locked: false, health: null, syncing: false };
 
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -85,6 +88,43 @@ function macroBars(intake, t, prefix) {
   return rows.map(([name, v, goal, color]) => `<div class="macro"><div class="row"><b>${name}</b><span class="num">${n0(v)} / ${n0(goal)} g</span></div>${bar(`${prefix}-${name}`, goal ? v / goal : 0, color)}</div>`).join('');
 }
 
+function stepControls(d) {
+  if (!bridge.available) return `<button class="btn ghost small" data-act="steps" style="margin-top:16px">Update steps</button>`;
+  const h = state.health, manual = `<button class="btn ghost small" data-act="steps">Enter by hand</button>`;
+  let note, action;
+  if (d.stepsManual) { note = 'Entered by hand for this day.'; action = `<button class="btn small" data-act="use-health">Use Health Connect</button>${manual}`; }
+  else if (state.syncing && !h) { note = 'Reading steps from Health Connect…'; action = ''; }
+  else if (!h || h.ok) { note = 'Synced from Health Connect.'; action = `<button class="btn ghost small" data-act="sync">Sync now</button>${manual}`; }
+  else if (h.error === 'no_permission') { note = HEALTH_MESSAGES.no_permission; action = `<button class="btn small" data-act="connect">Connect Health Connect</button>${manual}`; }
+  else if (h.error === 'update_required') { note = HEALTH_MESSAGES.update_required; action = `<button class="btn small" data-act="open-health">Open Health Connect</button>${manual}`; }
+  else { note = HEALTH_MESSAGES[h.error] ?? `Could not read steps (${esc(h.message ?? h.error)}).`; action = `<button class="btn ghost small" data-act="sync">Try again</button>${manual}`; }
+  return `<p class="hint" style="margin-top:16px;text-align:center">${note}</p><div class="row" style="margin-top:10px;flex-wrap:wrap;justify-content:center">${action}</div>`;
+}
+
+/** Pull the viewed day's step total from Health Connect. Days entered by hand are left alone. */
+async function syncSteps({ ask = false } = {}) {
+  if (!bridge.available) return;
+  if (state.syncing) { state.resync = true; return; } // run once more when the current read finishes
+  const key = state.date;
+  if (store.peek(key).stepsManual) return;
+  state.syncing = true;
+  try {
+    const start = dateOf(key), end = dateOf(shiftKey(key, 1));
+    let r = await bridge.readSteps(start, end);
+    if (!r.ok && r.error === 'no_permission' && ask) {
+      const granted = await bridge.requestPermission();
+      r = granted.ok ? await bridge.readSteps(start, end) : granted;
+    }
+    state.health = r;
+    if (r.ok && Number.isFinite(r.steps) && (r.steps > 0 || store.data.days[key]) && store.peek(key).steps !== r.steps) {
+      store.day(key).steps = Math.round(r.steps);
+      if (!store.save()) toast('Could not save — storage is full or blocked');
+    }
+  } finally { state.syncing = false; }
+  if (state.resync || state.date !== key) { state.resync = false; return syncSteps(); }
+  if (!$('.scrim')) render({ still: true });
+}
+
 function viewToday() {
   const p = profile(), d = day(), burn = C.dayBurn(d, p), intake = C.dayIntake(d), t = p.targets;
   const pct = p.stepGoal ? d.steps / p.stepGoal : 0, left = Math.max(0, p.stepGoal - d.steps);
@@ -98,7 +138,7 @@ function viewToday() {
       <div><b class="num">${n0(burn.steps)}</b><span>kcal from steps</span></div>
       <div><b class="num">${stepsDone ? 'Done' : n0(left)}</b><span>${stepsDone ? 'goal reached' : 'steps to go'}</span></div>
     </div>
-    <button class="btn ghost small" data-act="steps" style="margin-top:16px">Update steps</button>
+    ${stepControls(d)}
   </section>
   <section class="card checks" aria-label="Daily checklist">
     ${check('walk', d.checks.walk, 'Morning walk', `${p.walkMin} min · counted in steps`)}
@@ -300,7 +340,7 @@ function sheetSettings() {
     <input type="file" id="import-file" accept="application/json,.json" hidden>`);
 }
 function sheetSteps() {
-  openSheet(`<h1>Steps today</h1><p class="sub">Enter the total from Google Fit or your phone. Automatic sync arrives with the Android build.</p>
+  openSheet(`<h1>Steps today</h1><p class="sub">${bridge.available ? 'A number entered here replaces Health Connect for this day.' : 'Enter the total from Google Fit or your phone. The Android app reads it automatically.'}</p>
     <input id="steps-in" class="in big-in num" inputmode="numeric" value="${day().steps || ''}" placeholder="0" aria-label="Steps" autofocus>
     <div class="actions"><button class="btn ghost" data-act="close">Cancel</button><button class="btn" data-act="save-steps">Save</button></div>`);
 }
@@ -388,14 +428,18 @@ const posNum = (v) => { const x = parseFloat(v); return Number.isFinite(x) && x 
 
 const ACT = {
   tab(k) { state.tab = k; render(); window.scrollTo(0, 0); },
-  day(n) { const next = +n === 0 ? todayKey() : shiftKey(state.date, +n); if (next > todayKey() || next === state.date) return; state.date = next; state.anim.clear(); render(); },
-  goto(k) { state.date = k; state.anim.clear(); render(); },
+  day(n) { const next = +n === 0 ? todayKey() : shiftKey(state.date, +n); if (next > todayKey() || next === state.date) return; state.date = next; state.anim.clear(); render(); syncSteps(); },
+  goto(k) { state.date = k; state.anim.clear(); render(); syncSteps(); },
+  sync() { syncSteps({ ask: true }); },
+  connect() { syncSteps({ ask: true }); },
+  'use-health'() { delete edit().stepsManual; commit({ still: true }); syncSteps({ ask: true }); },
+  async 'open-health'() { const r = await bridge.openHealthConnect(); if (!r.ok) toast('Could not open Health Connect'); },
   settings: sheetSettings, steps: sheetSteps, close: closeSheet,
   toggle(k) { const d = edit(); if (k === 'gym') d.gym.done = !d.gym.done; else d.checks[k] = !d.checks[k]; commit({ still: true }); },
   'save-steps'() {
     const v = posNum($('#steps-in').value || 0);
     if (v === null || v > 200000) return toast('Enter a step count between 0 and 200,000');
-    edit().steps = Math.round(v); closeSheet(); commit({ still: true });
+    const d = edit(); d.steps = Math.round(v); if (bridge.available) d.stepsManual = true; closeSheet(); commit({ still: true });
   },
   'save-profile'() {
     const f = new FormData($('#profile-form')), get = (k) => posNum(f.get(k));
@@ -454,10 +498,11 @@ const ACT = {
   'save-item'(k, i) { const g = posNum($('#item-g').value); if (!g) return toast('Enter an amount above 0 g'); edit().meals[k][+i].grams = g; closeSheet(); commit({ still: true }); },
   async share() {
     const text = reportText();
-    try { if (navigator.share) await navigator.share({ text }); else { await navigator.clipboard.writeText(text); toast('Report copied'); } }
+    try { if (bridge.available) { const r = await bridge.shareText(text); if (!r.ok) toast('Could not share the report'); } else if (navigator.share) await navigator.share({ text }); else { await navigator.clipboard.writeText(text); toast('Report copied'); } }
     catch (err) { if (err.name !== 'AbortError') { console.error(err); toast('Could not share the report'); } }
   },
-  export() {
+  async export() {
+    if (bridge.available) { const r = await bridge.saveFile(`stride-backup-${todayKey()}.json`, JSON.stringify(store.data)); toast(r.ok ? 'Backup saved' : r.error === 'cancelled' ? 'Backup cancelled' : 'Could not save the backup'); return; }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([JSON.stringify(store.data)], { type: 'application/json' }));
     a.download = `stride-backup-${todayKey()}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
@@ -503,8 +548,15 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && e.target.id === 'steps-in') ACT['save-steps']();
 });
 document.addEventListener('submit', (e) => e.preventDefault());
-document.addEventListener('visibilitychange', () => { if (!document.hidden && !$('.scrim')) render({ still: true }); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) return; if (!$('.scrim')) render({ still: true }); syncSteps(); });
+// Android back button: close a sheet, then return to Today, then let the shell exit.
+globalThis.__strideBack = () => {
+  if ($('.scrim')) { if (!state.locked) closeSheet(); return true; }
+  if (state.tab !== 'today') { ACT.tab('today'); return true; }
+  return false;
+};
 
 render();
 if (!store.profile) sheetOnboard();
-if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch((err) => console.error('Stride: offline mode unavailable', err));
+syncSteps();
+if (!bridge.available && 'serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch((err) => console.error('Stride: offline mode unavailable', err));
