@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Stride</string>
+    <string name="rationale_title">Why Stride reads your steps</string>
+    <string name="rationale_body">Stride reads your daily step count from Health Connect to show your steps, distance and estimated calories. It only reads; it never writes to Health Connect. The numbers stay on this phone and are not sent anywhere.</string>
+</resources>
