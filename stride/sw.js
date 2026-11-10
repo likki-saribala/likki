@@ -1,5 +1,5 @@
 // Offline shell: serve from cache, refresh in the background.
-const CACHE = 'stride-v2';
+const CACHE = 'stride-v3';
 const SHELL = ['./', 'index.html', 'css/app.css', 'js/app.js', 'js/calc.js', 'js/store.js', 'js/foods.js', 'js/foodparse.js', 'js/exercises.js', 'js/native.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png'];
 
 self.addEventListener('install', (e) => e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())));

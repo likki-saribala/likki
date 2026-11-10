@@ -556,6 +556,18 @@ globalThis.__strideBack = () => {
   return false;
 };
 
+// Some hosts pin a badge to the bottom of the page. Keep the tab bar and sheet buttons clear of it.
+function dockForBadge() {
+  const badge = document.querySelector('body > iframe[id*="badge"]');
+  const h = badge && getComputedStyle(badge).position === 'fixed' ? Math.ceil(innerHeight - badge.getBoundingClientRect().top) : 0;
+  document.documentElement.style.setProperty('--dock', `${h > 0 && h < 160 ? h : 0}px`);
+}
+// The badge is styled a moment after it is inserted, so measure again once it has settled.
+const settleDock = () => { dockForBadge(); setTimeout(dockForBadge, 300); setTimeout(dockForBadge, 1500); };
+new MutationObserver(settleDock).observe(document.body, { childList: true });
+settleDock(); // the badge may already be there when this script starts
+addEventListener('resize', dockForBadge);
+
 render();
 if (!store.profile) sheetOnboard();
 syncSteps();

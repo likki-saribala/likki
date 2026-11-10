@@ -4,6 +4,7 @@
   --accent: #c6f432; --accent-ink: #10130a; --accent-soft: rgba(198, 244, 50, .12);
   --burn: #ff7d4d; --protein: #8aa4ff; --carbs: #ffca5c; --fat: #ff92b4; --danger: #ff5d5d;
   --r: 22px; --r-sm: 14px; --ease: cubic-bezier(.2, .8, .2, 1);
+  --dock: 0px; /* space kept free at the bottom for a host-injected badge */
   --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   color-scheme: dark;
 }
@@ -35,14 +36,14 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
 .icon-btn:disabled { opacity: .25; pointer-events: none; }
 .icon-btn svg, .tabs svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 
-.view { flex: 1; padding: 6px 16px calc(96px + env(safe-area-inset-bottom)); outline: none; }
+.view { flex: 1; padding: 6px 16px calc(96px + var(--dock) + env(safe-area-inset-bottom)); outline: none; }
 .view > * { animation: rise .45s var(--ease) both; }
 .view > *:nth-child(2) { animation-delay: .04s; } .view > *:nth-child(3) { animation-delay: .08s; }
 .view > *:nth-child(4) { animation-delay: .12s; } .view > *:nth-child(n+5) { animation-delay: .16s; }
 .view.still > * { animation: none; }
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
 
-.tabs { position: fixed; left: 50%; bottom: calc(12px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 6;
+.tabs { position: fixed; left: 50%; bottom: calc(12px + var(--dock) + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 6;
   display: flex; gap: 2px; padding: 6px; border-radius: 999px; background: color-mix(in srgb, var(--surface-2) 88%, transparent);
   backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border: 1px solid var(--line); box-shadow: 0 12px 32px rgba(0, 0, 0, .35); }
 .tabs button { display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px; border-radius: 999px; color: var(--muted); font-weight: 600; font-size: 14px;
@@ -187,7 +188,7 @@ textarea.in { height: auto; min-height: 76px; padding: 12px; resize: none; line-
 /* sheets */
 .scrim { position: fixed; inset: 0; z-index: 20; background: rgba(0, 0, 0, .55); display: flex; align-items: flex-end; justify-content: center; animation: fade .25s both; }
 .sheet { width: 100%; max-width: 480px; max-height: 92dvh; overflow-y: auto; background: var(--surface); border-radius: 28px 28px 0 0; border: 1px solid var(--line); border-bottom: 0;
-  padding: 10px 20px calc(22px + env(safe-area-inset-bottom)); animation: up .38s var(--ease) both; }
+  padding: 10px 20px calc(22px + var(--dock) + env(safe-area-inset-bottom)); animation: up .38s var(--ease) both; }
 .sheet::before { content: ""; display: block; width: 40px; height: 4px; border-radius: 4px; background: var(--line); margin: 0 auto 14px; }
 .sheet h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -.02em; }
 .sheet p.sub { color: var(--muted); margin: 0 0 16px; }
@@ -210,7 +211,7 @@ textarea.in { height: auto; min-height: 76px; padding: 12px; resize: none; line-
 .prow .meta { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
 .prow .miss { color: var(--carbs); font-weight: 600; }
 
-.toast { position: fixed; left: 50%; bottom: calc(88px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); z-index: 30; background: var(--text); color: var(--bg);
+.toast { position: fixed; left: 50%; bottom: calc(88px + var(--dock) + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); z-index: 30; background: var(--text); color: var(--bg);
   padding: 10px 16px; border-radius: 999px; font-weight: 600; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .25s, transform .3s var(--ease); max-width: 90vw; text-align: center; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
